@@ -17,13 +17,19 @@ TaskHandle_t lightTaskHandle=NULL;
 void Temp(void* arg);
 void Hum(void* arg);
 void Light(void* arg);
-SemaphoreHandle_t xSemaphore;
+SemaphoreHandle_t sem;
+
+
+
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
   dht.begin();
-xSemaphore = xSemaphoreCreateBinary();
+sem = xSemaphoreCreateBinary();
+
+
+
 xTaskCreatePinnedToCore(Temp, "Temp", 10000, NULL, 1, &tempTaskHandle, 0);
 xTaskCreatePinnedToCore(Hum, "Hum", 10000, NULL, 1, &humTaskHandle, 0);
 xTaskCreatePinnedToCore(Light, "Light", 10000, NULL, 1, &lightTaskHandle, 1);
@@ -36,34 +42,37 @@ void Temp(void *pvParameters) {
   Serial.print(temp);
   Serial.print("°C");
   Serial.println();
-  xSemaphoreGive(xSemaphore);
+  xSemaphoreGive(sem);
   vTaskDelay(4000);
   }
 }
 
 void Hum(void *pvParameters) {
 while(1){
+  xSemaphoreTake(sem, portMAX_DELAY);
   float hum= dht.readHumidity();
   Serial.print("Humidity: ");
   Serial.print(hum);
   Serial.print("%");
   Serial.println();
-   xSemaphoreGive(xSemaphore);
+   xSemaphoreGive(sem);
   vTaskDelay(3000);
   }
 }
   void Light(void *pvParameters) {
   while(1){
+  xSemaphoreTake(sem, portMAX_DELAY);
   float lux = lightMeter.readLightLevel();
   Serial.print("Light: ");
   Serial.print(lux);
   Serial.print(" lx");
   Serial.println();
-  xSemaphoreGive(xSemaphore);
+  xSemaphoreGive(sem);
   vTaskDelay(3000);
   }
 }
 
 void loop() {
+  
   
 }
